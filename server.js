@@ -4,7 +4,8 @@ const cors = require('cors');
 
 require('dotenv').config();
 
-const productRouter = require('./src/routes/products');
+const productRouter = require('./src/routes/products.js');
+
 
 
 const app = express();
