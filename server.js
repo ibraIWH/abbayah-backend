@@ -13,13 +13,22 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// HEALTH CHECK
+app.get('/', (req, res) => {
+  res.json({ ok: true, service: 'hni-backend', version: '1.0.0' });
+});
+
 // Routes
 app.use('/api/products', productRouter);
 
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error(err));
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`API running on :${PORT}`));
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log('MongoDB connected');
+    const PORT = process.env.PORT || 4000;
+    app.listen(PORT, () => console.log(`API running on :${PORT}`));
+  })
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });
