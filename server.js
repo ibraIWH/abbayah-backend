@@ -23,6 +23,8 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/products', productRouter);
 
+app.use('/api/auth', require('./src/routes/auth'));
+
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
