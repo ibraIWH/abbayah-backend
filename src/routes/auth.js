@@ -78,7 +78,7 @@ router.post('/login', [
 });
 
 // GET /api/auth/me  — get current user from token
-router.get('/me', require('./authMiddleware'), async (req, res) => {
+router.get('/me', require('../middleware/auth'), async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-passwordHash');
     if (!user) return res.status(404).json({ message: 'User not found' });
