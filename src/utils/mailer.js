@@ -1,19 +1,23 @@
 const nodemailer = require('nodemailer');
 
-// This will throw an error if env vars are missing – we want that in production
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
-  secure: false, // true for 465, false for others
+  secure: false,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  connectionTimeout: 8000,      // 8 seconds to establish connection
+  greetingTimeout: 8000,        // 8 seconds for SMTP greeting
+  socketTimeout: 8000,          // 8 seconds of inactivity
 });
 
-exports.sendVerificationEmail = async (to, token) => {
-  const verifyUrl = `${process.env.CLIENT_URL}/verify-email/${token}`;
-  await transporter.sendMail({
+exports.sendVerificationEmail = (to, token) => {
+  const verifyUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email/${token}`;
+  
+  // Return a promise but we'll handle errors outside
+  return transporter.sendMail({
     from: `"Abyr Line" <${process.env.SMTP_USER}>`,
     to,
     subject: 'Verify your email address',

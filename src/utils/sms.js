@@ -1,11 +1,27 @@
-const twilio = require('twilio');
+const nodemailer = require('nodemailer');
 
-const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+  connectionTimeout: 8000,
+  greetingTimeout: 8000,
+  socketTimeout: 8000,
+});
 
-exports.sendVerificationSMS = async (phone, code) => {
-  await client.messages.create({
-    body: `Your Abyr Line verification code is: ${code}`,
-    from: process.env.TWILIO_PHONE_NUMBER, // your Twilio phone number
-    to: phone,
+exports.sendVerificationSMS = (phone, code) => {
+  const digits = phone.replace(/\D/g, '');
+  const gatewayDomain = process.env.SMS_GATEWAY_DOMAIN || 'mobily.com.sa';
+  const to = `${digits}@${gatewayDomain}`;
+
+  return transporter.sendMail({
+    from: `"Abyr Line" <${process.env.SMTP_USER}>`,
+    to,
+    subject: '',
+    text: `Your Abyr Line verification code is: ${code}`,
   });
 };

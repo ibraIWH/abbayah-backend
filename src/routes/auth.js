@@ -47,12 +47,10 @@ router.post(
       await user.save();
 
       // Try to send verification email, but don't fail if it errors
-      try {
-        await sendVerificationEmail(email, token);
-      } catch (emailErr) {
-        console.error('Failed to send verification email:', emailErr.message);
-        // Registration still succeeds – the user can resend later
-      }
+           // Fire and forget – do not wait for the email
+           sendVerificationEmail(email, token)
+           .then(() => console.log('Verification email sent to ' + email))
+           .catch(err => console.error('Failed to send verification email:', err.message));
 
       // Generate JWT so user can log in immediately
       const jwtToken = generateToken(user);
