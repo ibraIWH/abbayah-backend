@@ -1,25 +1,12 @@
-// src/utils/mailer.js
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  connectionTimeout: 8000,
-  greetingTimeout: 8000,
-  socketTimeout: 8000,
-});
-
-exports.sendVerificationEmail = (to, token) => {
+exports.sendVerificationEmail = async (to, token) => {
   const verifyUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email/${token}`;
-  
-  return transporter.sendMail({
-    from: `"Abyr Line" <${process.env.SMTP_USER}>`,
+
+  await sgMail.send({
     to,
+    from: process.env.SENDGRID_FROM_EMAIL,
     subject: 'Verify your email address',
     html: `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
