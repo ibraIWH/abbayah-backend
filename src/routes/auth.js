@@ -18,6 +18,7 @@ const generateToken = (user) =>
 // ------------------------------------------------------------
 // POST /api/auth/register
 // ------------------------------------------------------------
+// POST /api/auth/register
 router.post(
   '/register',
   [
@@ -42,13 +43,18 @@ router.post(
       // Generate email verification token
       const token = crypto.randomBytes(32).toString('hex');
       user.emailToken = token;
-      user.emailTokenExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+      user.emailTokenExpiry = Date.now() + 24 * 60 * 60 * 1000;
       await user.save();
 
-      // Send verification email (always – will throw if SMTP not configured)
-      await sendVerificationEmail(email, token);
+      // Try to send verification email, but don't fail if it errors
+      try {
+        await sendVerificationEmail(email, token);
+      } catch (emailErr) {
+        console.error('Failed to send verification email:', emailErr.message);
+        // Registration still succeeds – the user can resend later
+      }
 
-      // Generate JWT so the user can access /me immediately (but email_verified will be false)
+      // Generate JWT so user can log in immediately
       const jwtToken = generateToken(user);
 
       res.status(201).json({
@@ -64,11 +70,11 @@ router.post(
         },
       });
     } catch (err) {
+      console.error('Register error:', err);
       res.status(500).json({ message: 'Server error', error: err.message });
     }
   }
 );
-
 // ------------------------------------------------------------
 // POST /api/auth/login
 // ------------------------------------------------------------
