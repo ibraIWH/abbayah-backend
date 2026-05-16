@@ -1,22 +1,22 @@
+// src/utils/mailer.js
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: false,
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  connectionTimeout: 8000,      // 8 seconds to establish connection
-  greetingTimeout: 8000,        // 8 seconds for SMTP greeting
-  socketTimeout: 8000,          // 8 seconds of inactivity
+  connectionTimeout: 8000,
+  greetingTimeout: 8000,
+  socketTimeout: 8000,
 });
 
 exports.sendVerificationEmail = (to, token) => {
   const verifyUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email/${token}`;
   
-  // Return a promise but we'll handle errors outside
   return transporter.sendMail({
     from: `"Abyr Line" <${process.env.SMTP_USER}>`,
     to,
