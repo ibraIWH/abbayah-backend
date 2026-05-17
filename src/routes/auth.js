@@ -197,22 +197,43 @@ router.post('/send-sms', require('../middleware/auth'), async (req, res) => {
 // ------------------------------------------------------------
 // POST /api/auth/verify-sms
 // ------------------------------------------------------------
-router.post('/verify-sms', require('../middleware/auth'), async (req, res) => {
+// POST /api/auth/send-sms  (requires phone in body)
+router.post('/send-sms', require('../middleware/auth'), async (req, res) => {
   try {
-    const { code } = req.body;
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user.smsCodeExpiry < Date.now()) return res.status(400).json({ message: 'Code expired' });
-    if (user.smsCode !== code) return res.status(400).json({ message: 'Invalid code' });
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({ message: 'Phone number required' });
+    }
 
-    user.phoneVerified = true;
-    user.smsCode = undefined;
-    user.smsCodeExpiry = undefined;
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    user.phone = phone;
+    user.smsCode = code;
+    user.smsCodeExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
     await user.save();
 
-    res.json({ message: 'Phone verified successfully' });
+    // Send SMS via SendGrid (email-to-SMS gateway)
+    await sendVerificationSMS(phone, code);
+
+    res.json({ message: 'SMS sent successfully' });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    // Log full error details
+    console.error('SMS send error:', {
+      message: err.message,
+      stack: err.stack,
+      response: err.response?.body || err.response,
+      code: err.code,
+    });
+
+    res.status(500).json({
+      message: 'Failed to send SMS',
+      error: err.response?.body || err.message,
+    });
   }
 });
 
