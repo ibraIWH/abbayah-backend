@@ -18,7 +18,6 @@ const generateToken = (user) =>
 // ------------------------------------------------------------
 // POST /api/auth/register
 // ------------------------------------------------------------
-// POST /api/auth/register
 router.post(
   '/register',
   [
@@ -46,11 +45,10 @@ router.post(
       user.emailTokenExpiry = Date.now() + 24 * 60 * 60 * 1000;
       await user.save();
 
-      // Try to send verification email, but don't fail if it errors
-           // Fire and forget – do not wait for the email
-           sendVerificationEmail(email, token)
-           .then(() => console.log('Verification email sent to ' + email))
-           .catch(err => console.error('Failed to send verification email:', err.message));
+      // Fire and forget – send verification email in background
+      sendVerificationEmail(email, token)
+        .then(() => console.log('Verification email sent to ' + email))
+        .catch(err => console.error('Failed to send verification email:', err.message));
 
       // Generate JWT so user can log in immediately
       const jwtToken = generateToken(user);
@@ -73,6 +71,7 @@ router.post(
     }
   }
 );
+
 // ------------------------------------------------------------
 // POST /api/auth/login
 // ------------------------------------------------------------
@@ -170,7 +169,7 @@ router.post('/resend-email-verification', require('../middleware/auth'), async (
 });
 
 // ------------------------------------------------------------
-// POST /api/auth/send-sms  (requires phone in body)
+// POST /api/auth/send-sms  (Twilio Verify)
 // ------------------------------------------------------------
 router.post('/send-sms', require('../middleware/auth'), async (req, res) => {
   try {
@@ -180,60 +179,45 @@ router.post('/send-sms', require('../middleware/auth'), async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Save phone number (Twilio Verify will send the code)
     user.phone = phone;
-    user.smsCode = code;
-    user.smsCodeExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
     await user.save();
 
-    await sendVerificationSMS(phone, code);
+    await sendVerificationSMS(phone);
+
     res.json({ message: 'SMS sent' });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error('SMS send error:', err);
+    res.status(500).json({ message: 'Failed to send SMS', error: err.message });
   }
 });
 
 // ------------------------------------------------------------
-// POST /api/auth/verify-sms
+// POST /api/auth/verify-sms  (Twilio Verify)
 // ------------------------------------------------------------
-// POST /api/auth/send-sms  (requires phone in body)
-router.post('/send-sms', require('../middleware/auth'), async (req, res) => {
+router.post('/verify-sms', require('../middleware/auth'), async (req, res) => {
   try {
-    const { phone } = req.body;
-    if (!phone) {
-      return res.status(400).json({ message: 'Phone number required' });
-    }
-
+    const { code } = req.body;
     const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Use Twilio Verify to check the code
+    const twilio = require('twilio');
+    const verifyClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+    const check = await verifyClient.verify.v2
+      .services(process.env.TWILIO_VERIFY_SERVICE_SID)
+      .verificationChecks.create({ to: user.phone, code });
+
+    if (check.status === 'approved') {
+      user.phoneVerified = true;
+      await user.save();
+      res.json({ message: 'Phone verified successfully' });
+    } else {
+      res.status(400).json({ message: 'Invalid or expired code' });
     }
-
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    user.phone = phone;
-    user.smsCode = code;
-    user.smsCodeExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
-    await user.save();
-
-    // Send SMS via SendGrid (email-to-SMS gateway)
-    await sendVerificationSMS(phone, code);
-
-    res.json({ message: 'SMS sent successfully' });
   } catch (err) {
-    // Log full error details
-    console.error('SMS send error:', {
-      message: err.message,
-      stack: err.stack,
-      response: err.response?.body || err.response,
-      code: err.code,
-    });
-
-    res.status(500).json({
-      message: 'Failed to send SMS',
-      error: err.response?.body || err.message,
-    });
+    res.status(500).json({ message: 'Verification failed', error: err.message });
   }
 });
 
