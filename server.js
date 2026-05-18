@@ -25,6 +25,8 @@ app.use('/api/products', productRouter);
 
 app.use('/api/auth', require('./src/routes/auth'));
 
+app.use('/api/favourites', require('./src/routes/favourites'));
+
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
