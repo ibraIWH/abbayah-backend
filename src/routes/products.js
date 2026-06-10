@@ -11,7 +11,7 @@ router.get("/", async (req, res) => {
 
     // Category filter
     if (category && category !== "All") {
-      filter.category = category;
+      filter.category = { $regex: new RegExp(`^${category}$`, 'i') };
     }
 
     // Search filter
