@@ -27,6 +27,8 @@ app.use('/api/auth', require('./src/routes/auth'));
 
 app.use('/api/favourites', require('./src/routes/favourites'));
 
+app.use('/api/orders', require('./src/routes/orders'));
+
 
 
 mongoose.connect(process.env.MONGODB_URI)
