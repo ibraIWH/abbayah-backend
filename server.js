@@ -8,8 +8,6 @@ if (process.env.NODE_ENV !== 'production') {
 
 const productRouter = require('./src/routes/products.js');
 
-
-
 const app = express();
 
 app.use(cors());
@@ -22,14 +20,9 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/api/products', productRouter);
-
 app.use('/api/auth', require('./src/routes/auth'));
-
 app.use('/api/favourites', require('./src/routes/favourites'));
-
 app.use('/api/orders', require('./src/routes/orders'));
-
-
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
