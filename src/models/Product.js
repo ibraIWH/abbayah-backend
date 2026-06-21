@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 
+
 const productSchema = new mongoose.Schema(
+  
   {
     name:        { type: String, required: true, trim: true },
     price:       { type: Number, required: true, min: 0 },
@@ -12,6 +14,7 @@ const productSchema = new mongoose.Schema(
     description: { type: String, default: '' },
     stock:       { type: Number, default: 10, min: 0 },
     sizes:       { type: [String], default: ['XS', 'S', 'M', 'L', 'XL'] },
+    tag: { type: String, enum: ['none', 'bestSeller', 'sellingFast'], default: 'none' },
     colors: [
       {
         name:     { type: String },
