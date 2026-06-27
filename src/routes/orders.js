@@ -126,4 +126,22 @@ router.put('/:id/status', auth, roleGuard('admin'), async (req, res) => {
   }
 });
 
+// GET /api/orders/admin/all — admin: list ALL orders, newest first
+// Optional: ?status=placed|confirmed|shipped|delivered|cancelled
+router.get('/admin/all', auth, roleGuard('admin'), async (req, res) => {
+  try {
+    const { status } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+
+    const orders = await Order.find(filter)
+      .populate('user', 'name email')   // pull the buyer's name+email from the User collection
+      .sort({ createdAt: -1 });
+
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 module.exports = router;
