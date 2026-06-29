@@ -86,6 +86,19 @@ router.get('/', auth, async (req, res) => {
 });
 
 // ------------------------------------------------------------
+// GET /api/orders/track/:orderNumber — public tracking
+// ------------------------------------------------------------
+router.get('/track/:orderNumber', async (req, res) => {
+  try {
+    const order = await Order.findOne({ orderNumber: req.params.orderNumber });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ------------------------------------------------------------
 // GET /api/orders/:id — single order (owner or admin)
 // ------------------------------------------------------------
 router.get('/:id', auth, async (req, res) => {
@@ -126,8 +139,10 @@ router.put('/:id/status', auth, roleGuard('admin'), async (req, res) => {
   }
 });
 
+// ------------------------------------------------------------
 // GET /api/orders/admin/all — admin: list ALL orders, newest first
 // Optional: ?status=placed|confirmed|shipped|delivered|cancelled
+// ------------------------------------------------------------
 router.get('/admin/all', auth, roleGuard('admin'), async (req, res) => {
   try {
     const { status } = req.query;
