@@ -4,6 +4,14 @@ const Product = require('../models/Product');
 const auth = require('../middleware/auth');
 const roleGuard = require('../middleware/roleGuard');
 
+// Turn a category from the URL into a pattern that also matches the stored text.
+// The storefront links to /category/black-abayas, but products store "Black Abayas",
+// so hyphens, underscores and spaces are all treated as the same separator.
+const categoryPattern = (value) => {
+  const escaped = value.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // escape regex chars
+  return escaped.replace(/[-_\s]+/g, '[-_\\s]+');                      // - _ and space interchangeable
+};
+
 // GET all products (public)
 router.get('/', async (req, res) => {
   try {
@@ -11,7 +19,7 @@ router.get('/', async (req, res) => {
     let filter = {};
 
     if (category && category !== 'All') {
-      filter.category = { $regex: new RegExp(`^${category}$`, 'i') };
+      filter.category = { $regex: new RegExp(`^${categoryPattern(category)}$`, 'i') };
     }
     if (search) {
       filter.name = { $regex: search, $options: 'i' };
