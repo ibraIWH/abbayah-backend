@@ -7,6 +7,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const productRouter = require('./src/routes/products.js');
+const categoriesRouter = require('./src/routes/categories');
 
 const app = express();
 
@@ -24,9 +25,14 @@ app.use('/api/auth', require('./src/routes/auth'));
 app.use('/api/favourites', require('./src/routes/favourites'));
 app.use('/api/orders', require('./src/routes/orders'));
 app.use('/api/cart', require('./src/routes/cart'));
-app.use('/api/collections', require('./src/routes/collections'));
 app.use('/api/offers', require('./src/routes/offers'));
 app.use('/api/settings', require('./src/routes/settings'));
+
+// Categories — the same router mounted twice.
+// /api/categories is the real name; /api/collections stays as a legacy alias
+// so the admin and any older clients keep working until they're updated.
+app.use('/api/categories', categoriesRouter);
+app.use('/api/collections', categoriesRouter);
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {

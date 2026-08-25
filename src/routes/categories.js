@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Collection = require('../models/Collection');
+const Category = require('../models/Category');
 const auth = require('../middleware/auth');
 const roleGuard = require('../middleware/roleGuard');
 
@@ -8,8 +8,8 @@ const roleGuard = require('../middleware/roleGuard');
 router.get('/', async (req, res) => {
   try {
     const filter = req.query.all === 'true' ? {} : { isActive: true };
-    const collections = await Collection.find(filter).sort({ order: 1, createdAt: -1 });
-    res.json(collections);
+    const categories = await Category.find(filter).sort({ order: 1, createdAt: -1 });
+    res.json(categories);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -18,9 +18,9 @@ router.get('/', async (req, res) => {
 // GET one by id — public
 router.get('/:id', async (req, res) => {
   try {
-    const collection = await Collection.findById(req.params.id);
-    if (!collection) return res.status(404).json({ message: 'Not found' });
-    res.json(collection);
+    const category = await Category.findById(req.params.id);
+    if (!category) return res.status(404).json({ message: 'Not found' });
+    res.json(category);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -29,8 +29,8 @@ router.get('/:id', async (req, res) => {
 // CREATE — admin only
 router.post('/', auth, roleGuard('admin'), async (req, res) => {
   try {
-    const collection = await Collection.create(req.body);
-    res.status(201).json(collection);
+    const category = await Category.create(req.body);
+    res.status(201).json(category);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -39,7 +39,7 @@ router.post('/', auth, roleGuard('admin'), async (req, res) => {
 // UPDATE — admin only
 router.put('/:id', auth, roleGuard('admin'), async (req, res) => {
   try {
-    const updated = await Collection.findByIdAndUpdate(
+    const updated = await Category.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
@@ -54,9 +54,9 @@ router.put('/:id', auth, roleGuard('admin'), async (req, res) => {
 // DELETE — admin only
 router.delete('/:id', auth, roleGuard('admin'), async (req, res) => {
   try {
-    const deleted = await Collection.findByIdAndDelete(req.params.id);
+    const deleted = await Category.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: 'Not found' });
-    res.json({ message: 'Collection deleted' });
+    res.json({ message: 'Category deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
