@@ -18,7 +18,9 @@ router.get('/', async (req, res) => {
     const { category, search } = req.query;
     let filter = {};
 
-    if (category && category !== 'All') {
+    // 'all' means no filter — compared case-insensitively, since the
+    // storefront links to /category/all in lower case.
+    if (category && category.trim().toLowerCase() !== 'all') {
       filter.category = { $regex: new RegExp(`^${categoryPattern(category)}$`, 'i') };
     }
     if (search) {
