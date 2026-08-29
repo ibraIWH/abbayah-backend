@@ -27,6 +27,7 @@ app.use('/api/orders', require('./src/routes/orders'));
 app.use('/api/cart', require('./src/routes/cart'));
 app.use('/api/offers', require('./src/routes/offers'));
 app.use('/api/settings', require('./src/routes/settings'));
+app.use('/api/addresses', require('./src/routes/addresses'));
 
 // Categories — the same router mounted twice.
 // /api/categories is the real name; /api/collections stays as a legacy alias
