@@ -39,18 +39,15 @@ router.post(
       const passwordHash = await bcrypt.hash(password, 12);
       const user = await User.create({ name, email, passwordHash, phone: phone || null });
 
-      // Generate email verification token
       const token = crypto.randomBytes(32).toString('hex');
       user.emailToken = token;
       user.emailTokenExpiry = Date.now() + 24 * 60 * 60 * 1000;
       await user.save();
 
-      // Fire and forget – send verification email in background
       sendVerificationEmail(email, token)
         .then(() => console.log('Verification email sent to ' + email))
         .catch(err => console.error('Failed to send verification email:', err.message));
 
-      // Generate JWT so user can log in immediately
       const jwtToken = generateToken(user);
 
       res.status(201).json({
@@ -179,7 +176,6 @@ router.post('/send-sms', require('../middleware/auth'), async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Save phone number (Twilio Verify will send the code)
     user.phone = phone;
     await user.save();
 
@@ -201,7 +197,6 @@ router.post('/verify-sms', require('../middleware/auth'), async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Use Twilio Verify to check the code
     const twilio = require('twilio');
     const verifyClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
@@ -220,5 +215,37 @@ router.post('/verify-sms', require('../middleware/auth'), async (req, res) => {
     res.status(500).json({ message: 'Verification failed', error: err.message });
   }
 });
+
+// ------------------------------------------------------------
+// PUT /api/auth/password — change password (authenticated)
+// ------------------------------------------------------------
+router.put(
+  '/password',
+  require('../middleware/auth'),
+  [
+    body('currentPassword').notEmpty().withMessage('Current password required'),
+    body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const user = await User.findById(req.user.id);
+      if (!user) return res.status(404).json({ message: 'User not found' });
+
+      const match = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!match) return res.status(401).json({ message: 'Current password is incorrect' });
+
+      user.passwordHash = await bcrypt.hash(newPassword, 12);
+      await user.save();
+
+      res.json({ message: 'Password updated successfully' });
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  }
+);
 
 module.exports = router;
