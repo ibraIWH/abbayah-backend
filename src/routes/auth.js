@@ -248,4 +248,52 @@ router.put(
   }
 );
 
+// ------------------------------------------------------------
+// PUT /api/auth/profile — update the signed-in user's name / email / phone
+// ------------------------------------------------------------
+router.put(
+  '/profile',
+  require('../middleware/auth'),
+  [
+    body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
+    body('email').optional().isEmail().withMessage('Valid email required'),
+    body('phone').optional(),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+      const { name, email, phone } = req.body;
+      const user = await User.findById(req.user.id);
+      if (!user) return res.status(404).json({ message: 'User not found' });
+
+      // If the email is changing, make sure no one else already uses it
+      if (email && email.toLowerCase() !== user.email) {
+        const taken = await User.findOne({ email: email.toLowerCase() });
+        if (taken) return res.status(409).json({ message: 'Email already in use' });
+        user.email = email.toLowerCase();
+        user.emailVerified = false; // new address must be re-verified
+      }
+
+      if (typeof name === 'string') user.name = name;
+      if (typeof phone === 'string') user.phone = phone;
+
+      await user.save();
+
+      res.json({
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        emailVerified: user.emailVerified,
+        phoneVerified: user.phoneVerified,
+      });
+    } catch (err) {
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  }
+);
+
 module.exports = router;
