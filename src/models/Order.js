@@ -31,7 +31,20 @@ const orderSchema = new mongoose.Schema({
     enum: ['placed', 'confirmed', 'shipped', 'delivered', 'cancelled'],
     default: 'placed',
   },
-  paymentMethod: { type: String, default: 'cod' },
+
+  // ✅ Payment method – added all local and international options
+  paymentMethod: {
+    type: String,
+    enum: ['cod', 'zaad', 'edahab', 'applepay', 'googlepay', 'card', 'paypal'],
+    default: 'cod',
+  },
+
+  // ✅ Phone number for mobile money (Zaad / eDahab)
+  phoneNumber: {
+    type: String,
+    default: '',
+  },
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);
