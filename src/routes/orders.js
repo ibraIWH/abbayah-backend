@@ -4,6 +4,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
 const roleGuard = require('../middleware/roleGuard');
+const { notifyUser, orderStatusMessage } = require('../utils/notify');
 
 const generateOrderNumber = () => {
   const stamp = Date.now().toString().slice(-6);
@@ -133,6 +134,19 @@ router.put('/:id/status', auth, roleGuard('admin'), async (req, res) => {
       { new: true }
     );
     if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    // Tell the customer their order moved forward (skip the initial 'placed')
+    if (status !== 'placed') {
+      const copy = orderStatusMessage(order.orderNumber, status);
+      notifyUser({
+        user: order.user,
+        type: 'order',
+        title: copy.title,
+        message: copy.message,
+        link: String(order._id),
+      });
+    }
+
     res.json(order);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
