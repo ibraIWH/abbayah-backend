@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
+const Broadcast = require('../models/Broadcast');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const roleGuard = require('../middleware/roleGuard');
@@ -51,6 +52,16 @@ router.put('/:id/read', auth, async (req, res) => {
 });
 
 // ------------------------------------------------------------
+// Helper: deliver a promo to every user's inbox, return how many
+// ------------------------------------------------------------
+async function deliverToAll({ title, message, link }) {
+  const users = await User.find({}, '_id');
+  const docs = users.map(u => ({ user: u._id, type: 'promo', title, message, link }));
+  if (docs.length) await Notification.insertMany(docs);
+  return docs.length;
+}
+
+// ------------------------------------------------------------
 // POST /api/notifications/broadcast — admin sends a promo to ALL users
 // Body: { title, message, link? }
 // ------------------------------------------------------------
@@ -61,15 +72,57 @@ router.post('/broadcast', auth, roleGuard('admin'), async (req, res) => {
       return res.status(400).json({ message: 'Title and message are required' });
     }
 
-    // One notification per user. Fine for a small shop; for scale you'd
-    // batch this, but this keeps each user's list self-contained.
-    const users = await User.find({}, '_id');
-    const docs = users.map(u => ({
-      user: u._id, type: 'promo', title, message, link,
-    }));
-    await Notification.insertMany(docs);
+    const count = await deliverToAll({ title, message, link });
 
-    res.status(201).json({ message: `Sent to ${docs.length} users` });
+    // Record the campaign so the admin can review / resend / delete it
+    await Broadcast.create({ title, message, link, sentCount: count, sendCount: 1 });
+
+    res.status(201).json({ message: `Sent to ${count} users` });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// ------------------------------------------------------------
+// GET /api/notifications/broadcasts — admin: list all campaigns sent
+// ------------------------------------------------------------
+router.get('/broadcasts', auth, roleGuard('admin'), async (req, res) => {
+  try {
+    const list = await Broadcast.find().sort({ createdAt: -1 });
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// ------------------------------------------------------------
+// POST /api/notifications/broadcasts/:id/resend — send an old campaign again
+// ------------------------------------------------------------
+router.post('/broadcasts/:id/resend', auth, roleGuard('admin'), async (req, res) => {
+  try {
+    const b = await Broadcast.findById(req.params.id);
+    if (!b) return res.status(404).json({ message: 'Not found' });
+
+    const count = await deliverToAll({ title: b.title, message: b.message, link: b.link });
+    b.sentCount = count;
+    b.sendCount += 1;
+    await b.save();
+
+    res.json({ message: `Resent to ${count} users` });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// ------------------------------------------------------------
+// DELETE /api/notifications/broadcasts/:id — remove a campaign from history
+// (does not recall notifications already delivered to inboxes)
+// ------------------------------------------------------------
+router.delete('/broadcasts/:id', auth, roleGuard('admin'), async (req, res) => {
+  try {
+    const deleted = await Broadcast.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Not found' });
+    res.json({ message: 'Campaign deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
