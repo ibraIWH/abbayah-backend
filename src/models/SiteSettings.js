@@ -15,6 +15,15 @@ const siteSettingsSchema = new mongoose.Schema(
 
     newsText:   { type: String, default: 'FREE DELIVERY OVER SAR 200 · NEW COLLECTION · EASY RETURNS' },
     newsActive: { type: Boolean, default: true },
+
+    // The deep-red promo banner in the middle of the home screen
+    promo: {
+      code:     { type: String, default: 'B2G3' },
+      line1:    { type: String, default: 'Buy 2' },
+      line2:    { type: String, default: 'Get 3rd Free' },
+      subtitle: { type: String, default: 'On all summer abayas' },
+      active:   { type: Boolean, default: true },
+    },
   },
   { timestamps: true }
 );

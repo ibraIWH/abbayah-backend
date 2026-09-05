@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// PUT — admin only. Accepts a partial body: { hero: {...} } and/or { newsText, newsActive }.
+// PUT — admin only. Accepts a partial body: { hero: {...} } and/or { newsText, newsActive } and/or { promo: {...} }.
 router.put('/', auth, roleGuard('admin'), async (req, res) => {
   try {
     const settings = await SiteSettings.getSingleton();
@@ -25,6 +25,11 @@ router.put('/', auth, roleGuard('admin'), async (req, res) => {
     }
     if (typeof req.body.newsText === 'string') settings.newsText = req.body.newsText;
     if (typeof req.body.newsActive === 'boolean') settings.newsActive = req.body.newsActive;
+
+    // Merge promo fields so a partial update doesn't wipe the rest
+    if (req.body.promo) {
+      settings.promo = { ...settings.promo.toObject(), ...req.body.promo };
+    }
 
     await settings.save();
     res.json(settings);
