@@ -16,6 +16,9 @@ const notificationSchema = new mongoose.Schema(
     link:    { type: String, default: '' },
 
     read:    { type: Boolean, default: false },
+
+    // If this came from an admin broadcast, which one — so admin delete can recall it
+    broadcast: { type: mongoose.Schema.Types.ObjectId, ref: 'Broadcast', default: null, index: true },
   },
   { timestamps: true }
 );
