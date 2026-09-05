@@ -131,6 +131,37 @@ router.post('/broadcasts/:id/resend', auth, roleGuard('admin'), async (req, res)
 });
 
 // ------------------------------------------------------------
+// PUT /api/notifications/broadcasts/:id — edit a campaign AND update the
+// copies already delivered to customers' inboxes
+// Body: { title, message, link? }
+// ------------------------------------------------------------
+router.put('/broadcasts/:id', auth, roleGuard('admin'), async (req, res) => {
+  try {
+    const { title, message, link = '' } = req.body;
+    if (!title || !message) {
+      return res.status(400).json({ message: 'Title and message are required' });
+    }
+
+    const b = await Broadcast.findByIdAndUpdate(
+      req.params.id,
+      { title, message, link },
+      { new: true, runValidators: true }
+    );
+    if (!b) return res.status(404).json({ message: 'Not found' });
+
+    // Update every delivered copy so customers see the new text
+    await Notification.updateMany(
+      { broadcast: req.params.id },
+      { title, message, link }
+    );
+
+    res.json({ message: 'Campaign updated', broadcast: b });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// ------------------------------------------------------------
 // DELETE /api/notifications/broadcasts/:id — remove a campaign from history
 // AND recall it from every customer's inbox
 // ------------------------------------------------------------
