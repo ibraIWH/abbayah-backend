@@ -35,6 +35,19 @@ router.put('/read-all', auth, async (req, res) => {
 });
 
 // ------------------------------------------------------------
+// DELETE /api/notifications/clear — delete ALL of the signed-in user's notifications
+// (declared before /:id so "clear" isn't read as an id)
+// ------------------------------------------------------------
+router.delete('/clear', auth, async (req, res) => {
+  try {
+    await Notification.deleteMany({ user: req.user.id });
+    res.json({ message: 'Cleared' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ------------------------------------------------------------
 // PUT /api/notifications/:id/read — mark one as read
 // ------------------------------------------------------------
 router.put('/:id/read', auth, async (req, res) => {
