@@ -24,6 +24,14 @@ const siteSettingsSchema = new mongoose.Schema(
       subtitle: { type: String, default: 'On all summer abayas' },
       active:   { type: Boolean, default: true },
     },
+
+    // Mobile-money numbers the customer sends payment to (shown at checkout for Zaad / eDahab).
+    // Hiba sets these in the admin panel so they can change without an app release.
+    payment: {
+      zaadNumber:   { type: String, default: '' },
+      edahabNumber: { type: String, default: '' },
+      note:         { type: String, default: 'Send the exact total to the number shown, then enter your transaction reference below.' },
+    },
   },
   { timestamps: true }
 );

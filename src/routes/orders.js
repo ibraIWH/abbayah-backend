@@ -14,11 +14,13 @@ const generateOrderNumber = () => {
 
 // ------------------------------------------------------------
 // POST /api/orders — create order (logged-in user)
-// Body: { items: [{ productId, quantity, size, color }], shippingAddress, paymentMethod }
+// Body: { items: [{ productId, quantity, size, color }], shippingAddress, paymentMethod, phoneNumber, paymentRef }
 // ------------------------------------------------------------
 router.post('/', auth, async (req, res) => {
   try {
-    const { items, shippingAddress, paymentMethod } = req.body;
+    // phoneNumber is the mobile-money wallet number for Zaad / eDahab.
+    // It was being dropped here before, so it never reached the database.
+    const { items, shippingAddress, paymentMethod, phoneNumber, paymentRef } = req.body;
 
     if (!items || !items.length) {
       return res.status(400).json({ message: 'No items in order' });
@@ -65,6 +67,8 @@ router.post('/', auth, async (req, res) => {
       deliveryFee,
       total,
       paymentMethod: paymentMethod || 'cod',
+      phoneNumber: phoneNumber || '',   // mobile-money number for Zaad/eDahab
+      paymentRef:  paymentRef  || '',   // transaction reference the customer enters after sending money
     });
 
     res.status(201).json(order);
