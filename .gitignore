@@ -11,3 +11,4 @@ yarn-error.log*
 
 # macOS
 .DS_Store
+repomix-output.xml
