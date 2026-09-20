@@ -32,15 +32,22 @@ const orderSchema = new mongoose.Schema({
     default: 'placed',
   },
 
-  // ✅ Payment method – added all local and international options
+  // ✅ Payment method – all local and international options
   paymentMethod: {
     type: String,
     enum: ['cod', 'zaad', 'edahab', 'applepay', 'googlepay', 'card', 'paypal'],
     default: 'cod',
   },
 
-  // ✅ Phone number for mobile money (Zaad / eDahab)
+  // ✅ Customer's mobile-money wallet number (Zaad / eDahab)
   phoneNumber: {
+    type: String,
+    default: '',
+  },
+
+  // ✅ Transaction reference the customer enters after sending mobile money.
+  // Without this field the schema drops the ref (strict mode), so it MUST exist here.
+  paymentRef: {
     type: String,
     default: '',
   },
